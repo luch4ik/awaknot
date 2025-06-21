@@ -7,8 +7,8 @@ An Alarm App copy cat implemented using [AlarmKit](https://developer.apple.com/d
 
 For more details:
 
-- [SwiftUI: Alarm App CopyCat with AlarmKit (WWDC 2025)-Part 1]()
-- [SwiftUI: Alarm App CopyCat with AlarmKit (WWDC 2025)-Part 2]()
+- [SwiftUI: Alarm App CopyCat with AlarmKit (WWDC 2025)-Part 1](https://medium.com/@itsuki.enjoy/swiftui-alarm-app-copycat-with-alarmkit-wwdc-2025-part-1-27fad3186791)
+- [SwiftUI: Alarm App CopyCat with AlarmKit (WWDC 2025)-Part 2](https://medium.com/@itsuki.enjoy/swiftui-alarm-app-copycat-with-alarmkit-wwdc-2025-part-2-5c3cb2194c54)
 
 
 ## Capability
