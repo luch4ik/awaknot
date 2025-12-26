@@ -10,6 +10,7 @@ import SwiftUI
 //@preconcurrency
 import AlarmKit
 import ActivityKit
+import UserNotifications
 
 
 
@@ -239,6 +240,50 @@ class ItsukiAlarmManager {
                 print("  - Challenges: \(itsukiAlarm.metadata.challenges.count)")
                 self.triggeringAlarm = itsukiAlarm
             }
+        }
+    }
+
+    // Schedule wake-up check notification after alarm dismissal
+    func scheduleWakeUpCheck(for alarm: ItsukiAlarm) {
+        guard alarm.wakeUpCheck.isEnabled else { return }
+
+        let content = UNMutableNotificationContent()
+        content.title = "Wake-Up Check"
+        content.body = "Are you still awake? Respond within \(alarm.wakeUpCheck.responseTimeMinutes) minutes."
+        content.sound = .default
+        content.interruptionLevel = .critical
+
+        let trigger = UNTimeIntervalNotificationTrigger(
+            timeInterval: TimeInterval(alarm.wakeUpCheck.delayMinutes * 60),
+            repeats: false
+        )
+
+        let request = UNNotificationRequest(
+            identifier: "wakeup-\(alarm.id)",
+            content: content,
+            trigger: trigger
+        )
+
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("⚠️ Failed to schedule wake-up check: \(error)")
+            } else {
+                print("✅ Wake-up check scheduled for alarm: \(alarm.title)")
+            }
+        }
+    }
+
+    // Request notification permissions (call on app launch)
+    func requestNotificationPermissions() async {
+        do {
+            let granted = try await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .criticalAlert])
+            if granted {
+                print("✅ Notification permissions granted")
+            } else {
+                print("⚠️ Notification permissions denied")
+            }
+        } catch {
+            print("⚠️ Failed to request notification permissions: \(error)")
         }
     }
     

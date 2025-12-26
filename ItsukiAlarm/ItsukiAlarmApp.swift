@@ -13,6 +13,10 @@ struct ItsukiAlarmApp: App {
         WindowGroup {
             ContentView()
                 .colorScheme(.dark)  // Changed to dark for OLED theme
+                .task {
+                    // Request notification permissions for wake-up checks
+                    await ItsukiAlarmManager.shared.requestNotificationPermissions()
+                }
         }
     }
 }

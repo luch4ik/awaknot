@@ -139,16 +139,9 @@ struct AlarmListView: View {
     func toggleAlarm(_ alarm: ItsukiAlarm) {
         HapticManager.shared.light()
 
-        // Toggle logic would go through ItsukiAlarmManager
-        // For now, we'll need to add this method
         Task {
             do {
-                if alarm.state == .scheduled {
-                    try await alarmManager.pauseAlarm(id: alarm.id)
-                } else {
-                    // Resume/enable alarm
-                    // This would require adding a resume method to ItsukiAlarmManager
-                }
+                try await alarmManager.toggleAlarm(alarm.id)
             } catch {
                 print("❌ Failed to toggle alarm: \(error)")
             }
@@ -161,13 +154,19 @@ struct AlarmListView: View {
         // Create duplicate with modified metadata
         var duplicateMetadata = alarm.metadata
         duplicateMetadata.title = alarm.title.isEmpty ? "Alarm (Copy)" : "\(alarm.title) (Copy)"
+        duplicateMetadata.createdAt = Date()
 
         // Add duplicate alarm
         Task {
             do {
-                // We'll need to add a proper duplicate method
-                // For now, this is a placeholder
-                print("Duplicate alarm feature - to be implemented")
+                guard let time = alarm.scheduledTime else {
+                    print("❌ Cannot duplicate alarm without scheduled time")
+                    return
+                }
+
+                let repeats = alarm.scheduledWeekdays ?? []
+                try await alarmManager.addAlarm(time: time, repeats: repeats, metadata: duplicateMetadata)
+                print("✅ Alarm duplicated successfully")
             } catch {
                 print("❌ Failed to duplicate alarm: \(error)")
             }

@@ -17,6 +17,8 @@ struct ContentView: View {
             .environment(self.alarmManager)
             .fullScreenCover(item: $alarmManager.triggeringAlarm) { alarm in
                 TriggerView(alarm: alarm) {
+                    // Schedule wake-up check if enabled
+                    alarmManager.scheduleWakeUpCheck(for: alarm)
                     // Dismiss action
                     alarmManager.triggeringAlarm = nil
                 }
