@@ -14,6 +14,10 @@ nonisolated struct _AlarmMetadata: AlarmMetadata {
     var icon: Icon
     var title: String
     var createdAt: Date = Date()
+
+    // Challenge system
+    var challenges: [AnyChallengeConfiguration] = []
+    var wakeUpCheck: WakeUpCheckConfig = .defaultConfig
     
     enum Icon: String, Codable, CaseIterable {
         case sun = "sun.max.fill"

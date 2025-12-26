@@ -86,6 +86,9 @@ class ItsukiAlarmManager {
             }
         }
     }
+
+    // Currently triggering alarm (for presenting TriggerView)
+    var triggeringAlarm: ItsukiAlarm? = nil
     
     private var recentAlarms: [ItsukiAlarm] = [] {
         didSet {
@@ -216,6 +219,25 @@ class ItsukiAlarmManager {
         Task {
             for await remoteAlarms in alarmManager.alarmUpdates {
                 combineLocalRemoteAlarms(localRunningAlarms: self.runningAlarms, localRecentAlarms: self.recentAlarms, remoteAlarms: remoteAlarms)
+
+                // Detect when an alarm enters .alerting state and trigger TriggerView
+                for alarm in remoteAlarms {
+                    if alarm.state == .alerting {
+                        await handleAlarmTriggered(alarm)
+                    }
+                }
+            }
+        }
+    }
+
+    // Handle alarm trigger - present TriggerView with challenges
+    private func handleAlarmTriggered(_ alarm: Alarm) async {
+        // Find the ItsukiAlarm with metadata
+        if let itsukiAlarm = runningAlarms.first(where: { $0.id == alarm.id }) {
+            await MainActor.run {
+                print("🔔 Alarm triggered: \(itsukiAlarm.title)")
+                print("  - Challenges: \(itsukiAlarm.metadata.challenges.count)")
+                self.triggeringAlarm = itsukiAlarm
             }
         }
     }
@@ -228,8 +250,13 @@ class ItsukiAlarmManager {
         let schedule = try self.createRelativeSchedule(date: date, repeats: repeats)
         try await self._addAlarm(metadata: metadata, alarmID: UUID(), schedule: schedule)
     }
-    
-    
+
+    // NEW: add alarm with full metadata (including challenges)
+    func addAlarm(time: Alarm.Schedule.Relative.Time, repeats: Set<Locale.Weekday>?, metadata: _AlarmMetadata) async throws {
+        let schedule = try self.createRelativeSchedule(time: time, repeats: repeats ?? [])
+        try await self._addAlarm(metadata: metadata, alarmID: UUID(), schedule: schedule)
+    }
+
     func editAlarm(_ alarmId: Alarm.ID, title: String, icon: _AlarmMetadata.Icon, date: Date, repeats: Set<Locale.Weekday>) async throws {
         let title = title.isEmpty ? _AlarmMetadata.alarmDefaultMetadata.title : title
 
@@ -304,12 +331,23 @@ class ItsukiAlarmManager {
         guard let time = date.time else {
             throw _Error.failToCreateSchedule
         }
-                
+
         let relativeSchedule: Alarm.Schedule.Relative = .init(
             time: time,
             repeats: repeats.isEmpty ? .never : .weekly(Array(repeats))
         )
-        
+
+        let schedule = Alarm.Schedule.relative(relativeSchedule)
+        return schedule
+    }
+
+    // NEW: createRelativeSchedule overload that accepts Time directly
+    private func createRelativeSchedule(time: Alarm.Schedule.Relative.Time, repeats: Set<Locale.Weekday>) throws -> Alarm.Schedule {
+        let relativeSchedule: Alarm.Schedule.Relative = .init(
+            time: time,
+            repeats: repeats.isEmpty ? .never : .weekly(Array(repeats))
+        )
+
         let schedule = Alarm.Schedule.relative(relativeSchedule)
         return schedule
     }

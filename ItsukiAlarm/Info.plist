@@ -4,5 +4,13 @@
 <dict>
 	<key>NSAlarmKitUsageDescription</key>
 	<string>Alarm from itsuki!</string>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>Alarms use Bluetooth to verify you're awake by connecting to your devices</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>Alarms can dismiss when you connect to specific Bluetooth devices</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>bluetooth-central</string>
+	</array>
 </dict>
 </plist>

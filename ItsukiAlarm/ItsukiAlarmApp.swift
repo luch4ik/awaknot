@@ -12,8 +12,7 @@ struct ItsukiAlarmApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .colorScheme(.light)
-
+                .colorScheme(.dark)  // Changed to dark for OLED theme
         }
     }
 }
