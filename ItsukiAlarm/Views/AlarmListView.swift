@@ -80,26 +80,7 @@ struct AlarmListView: View {
                 AlarmEditSheet(alarmManager: alarmManager, existingAlarm: alarm)
             }
             .sheet(isPresented: $showingSettings) {
-                // Placeholder for settings
-                NavigationView {
-                    VStack {
-                        Text("Settings Coming Soon")
-                            .font(Theme.title1())
-                            .foregroundColor(Theme.textSecondary)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Theme.surfaceElevated)
-                    .navigationTitle("Settings")
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .navigationBarTrailing) {
-                            Button("Done") {
-                                showingSettings = false
-                            }
-                            .foregroundColor(Theme.accent)
-                        }
-                    }
-                }
+                SettingsView()
             }
         }
     }
