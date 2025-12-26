@@ -8,7 +8,7 @@ on:
 jobs:
   build-ipa:
     name: Build Unsigned IPA
-    runs-on: macos-latest
+    runs-on: macos-26
 
     steps:
       - name: Checkout Repository
@@ -16,8 +16,6 @@ jobs:
 
       - name: Set up Xcode
         run: |
-          # Use the latest Xcode 16 available
-          sudo xcode-select -s /Applications/Xcode_16.1.app/Contents/Developer || sudo xcode-select -s /Applications/Xcode_16.0.app/Contents/Developer || echo "Using default Xcode"
           xcodebuild -version
 
       - name: Build Archive
