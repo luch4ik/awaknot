@@ -296,6 +296,13 @@ struct AlarmRow: View {
                     }
                 }
 
+                // Repeat pattern
+                if let weekdays = alarm.scheduledWeekdays, !weekdays.isEmpty {
+                    Text(formatRepeatPattern(weekdays))
+                        .font(Theme.caption())
+                        .foregroundColor(Theme.textTertiary)
+                }
+
                 // Challenge badges
                 if !alarm.challenges.isEmpty {
                     HStack(spacing: 6) {
@@ -401,6 +408,44 @@ struct AlarmRow: View {
             return "brain.head.profile"
         }
     }
+
+    func formatRepeatPattern(_ weekdays: Set<Locale.Weekday>) -> String {
+        let sorted = weekdays.sorted { weekdayOrder($0) < weekdayOrder($1) }
+
+        if sorted == [.monday, .tuesday, .wednesday, .thursday, .friday] {
+            return "Weekdays"
+        } else if sorted == [.saturday, .sunday] {
+            return "Weekend"
+        } else if sorted.count == 7 {
+            return "Every day"
+        } else {
+            return sorted.map { weekdayShort($0) }.joined(separator: ", ")
+        }
+    }
+
+    func weekdayShort(_ weekday: Locale.Weekday) -> String {
+        switch weekday {
+        case .sunday: return "Sun"
+        case .monday: return "Mon"
+        case .tuesday: return "Tue"
+        case .wednesday: return "Wed"
+        case .thursday: return "Thu"
+        case .friday: return "Fri"
+        case .saturday: return "Sat"
+        }
+    }
+
+    func weekdayOrder(_ weekday: Locale.Weekday) -> Int {
+        switch weekday {
+        case .sunday: return 0
+        case .monday: return 1
+        case .tuesday: return 2
+        case .wednesday: return 3
+        case .thursday: return 4
+        case .friday: return 5
+        case .saturday: return 6
+        }
+    }
 }
 
 // MARK: - Empty State
@@ -474,6 +519,7 @@ struct AlarmEditSheet: View {
     @State private var selectedMinute = 0
     @State private var label = ""
     @State private var selectedIcon: _AlarmMetadata.Icon = .sun
+    @State private var selectedWeekdays: Set<Locale.Weekday> = []
     @State private var challenges: [AnyChallengeConfiguration] = []
     @State private var wakeUpCheckEnabled = false
     @State private var wakeUpDelayMinutes = 10
@@ -502,6 +548,9 @@ struct AlarmEditSheet: View {
 
                         // Label and Icon Section
                         labelSection
+
+                        // Repeat Section
+                        repeatSection
 
                         // Challenges Section
                         challengesSection
@@ -628,6 +677,94 @@ struct AlarmEditSheet: View {
                             }
                         }
                     }
+                }
+            }
+            .padding()
+            .background(Theme.surface)
+            .cornerRadius(16)
+        }
+    }
+
+    var repeatSection: some View {
+        VStack(spacing: 16) {
+            Text("Repeat")
+                .font(Theme.headline())
+                .foregroundColor(Theme.textSecondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            VStack(spacing: 12) {
+                // Weekday buttons
+                HStack(spacing: 8) {
+                    ForEach([Locale.Weekday.sunday, .monday, .tuesday, .wednesday, .thursday, .friday, .saturday], id: \.self) { weekday in
+                        Button(action: {
+                            if selectedWeekdays.contains(weekday) {
+                                selectedWeekdays.remove(weekday)
+                            } else {
+                                selectedWeekdays.insert(weekday)
+                            }
+                            HapticManager.shared.light()
+                        }) {
+                            Text(weekdayShortName(weekday))
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(selectedWeekdays.contains(weekday) ? Theme.background : Theme.accent)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 44)
+                                .background(selectedWeekdays.contains(weekday) ? Theme.accent : Theme.surfaceElevated)
+                                .cornerRadius(10)
+                        }
+                    }
+                }
+
+                // Smart suggestions
+                HStack(spacing: 8) {
+                    Button(action: {
+                        selectedWeekdays = [.monday, .tuesday, .wednesday, .thursday, .friday]
+                        HapticManager.shared.light()
+                    }) {
+                        Text("Weekdays")
+                            .font(Theme.caption())
+                            .foregroundColor(Theme.accent)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(Theme.surfaceElevated)
+                            .cornerRadius(8)
+                    }
+
+                    Button(action: {
+                        selectedWeekdays = [.saturday, .sunday]
+                        HapticManager.shared.light()
+                    }) {
+                        Text("Weekend")
+                            .font(Theme.caption())
+                            .foregroundColor(Theme.accent)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(Theme.surfaceElevated)
+                            .cornerRadius(8)
+                    }
+
+                    Button(action: {
+                        selectedWeekdays = []
+                        HapticManager.shared.light()
+                    }) {
+                        Text("Once")
+                            .font(Theme.caption())
+                            .foregroundColor(Theme.accent)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(Theme.surfaceElevated)
+                            .cornerRadius(8)
+                    }
+
+                    Spacer()
+                }
+
+                // Display selected pattern
+                if !selectedWeekdays.isEmpty {
+                    Text(repeatPatternDescription())
+                        .font(Theme.body())
+                        .foregroundColor(Theme.textSecondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
             .padding()
@@ -846,6 +983,7 @@ struct AlarmEditSheet: View {
         }
         label = alarm.title
         selectedIcon = alarm.icon
+        selectedWeekdays = alarm.scheduledWeekdays ?? []
         challenges = alarm.challenges
         wakeUpCheckEnabled = alarm.wakeUpCheck.isEnabled
         wakeUpDelayMinutes = alarm.wakeUpCheck.delayMinutes
@@ -877,7 +1015,7 @@ struct AlarmEditSheet: View {
                     // Create new alarm
                     try await alarmManager.addAlarm(
                         time: Alarm.Schedule.Relative.Time(hour: selectedHour, minute: selectedMinute),
-                        repeats: nil,
+                        repeats: selectedWeekdays.isEmpty ? nil : selectedWeekdays,
                         metadata: metadata
                     )
                 }
@@ -893,6 +1031,58 @@ struct AlarmEditSheet: View {
             } catch {
                 print("❌ Failed to save alarm: \(error)")
             }
+        }
+    }
+
+    // MARK: - Helper Functions
+
+    private func weekdayShortName(_ weekday: Locale.Weekday) -> String {
+        switch weekday {
+        case .sunday: return "S"
+        case .monday: return "M"
+        case .tuesday: return "T"
+        case .wednesday: return "W"
+        case .thursday: return "T"
+        case .friday: return "F"
+        case .saturday: return "S"
+        }
+    }
+
+    private func repeatPatternDescription() -> String {
+        let sorted = selectedWeekdays.sorted { weekdayOrder($0) < weekdayOrder($1) }
+
+        if sorted == [.monday, .tuesday, .wednesday, .thursday, .friday] {
+            return "Every weekday"
+        } else if sorted == [.saturday, .sunday] {
+            return "Every weekend"
+        } else if sorted.count == 7 {
+            return "Every day"
+        } else {
+            return "Every " + sorted.map { weekdayFullName($0) }.joined(separator: ", ")
+        }
+    }
+
+    private func weekdayFullName(_ weekday: Locale.Weekday) -> String {
+        switch weekday {
+        case .sunday: return "Sun"
+        case .monday: return "Mon"
+        case .tuesday: return "Tue"
+        case .wednesday: return "Wed"
+        case .thursday: return "Thu"
+        case .friday: return "Fri"
+        case .saturday: return "Sat"
+        }
+    }
+
+    private func weekdayOrder(_ weekday: Locale.Weekday) -> Int {
+        switch weekday {
+        case .sunday: return 0
+        case .monday: return 1
+        case .tuesday: return 2
+        case .wednesday: return 3
+        case .thursday: return 4
+        case .friday: return 5
+        case .saturday: return 6
         }
     }
 }
